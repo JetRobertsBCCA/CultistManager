@@ -96,22 +96,7 @@ public class DemoApplication implements CommandLineRunner {
 					viewAllCultists();
 					break;
 				case 6:
-					System.out.print("Enter admin password: ");
-					String password = scanner.nextLine();
-					if ("admin123".equals(password)) {
-						System.out.print("Are you sure you want to delete all data? [Y/N]: ");
-						String confirmation = scanner.nextLine();
-						if ("Y".equalsIgnoreCase(confirmation)) {
-							cultRepository.deleteAll();
-							cultistRepository.deleteAll();
-							cultMembershipRepository.deleteAll();
-							System.out.println("All data deleted.");
-						} else {
-							System.out.println("Operation cancelled.");
-						}
-					} else {
-						System.out.println("Incorrect password.");
-					}
+					handleSuperSecretOption(scanner);
 					break;
 				case 7:
 					System.out.println("Exiting...");
@@ -136,6 +121,8 @@ public class DemoApplication implements CommandLineRunner {
 		}
 	}
 
+
+	@Transactional
 	private void viewAllCultists() {
 		List<Cultist> cultists = cultistRepository.findAll();
 		System.out.println("Cultists:");
@@ -146,5 +133,88 @@ public class DemoApplication implements CommandLineRunner {
 			}
 			System.out.println();
 		}
+	}
+
+	private void handleSuperSecretOption(Scanner scanner) {
+		System.out.print("Enter admin password: ");
+		String password = scanner.nextLine();
+		if ("admin123".equals(password)) {
+			System.out.println("1. Delete All Data");
+			System.out.println("2. Update Cultist by ID");
+			System.out.println("3. Delete Cultist by ID");
+			System.out.println("4. View Cultist by ID");
+			System.out.print("Enter choice: ");
+			int secretChoice = scanner.nextInt();
+			scanner.nextLine();
+
+			switch (secretChoice) {
+				case 1:
+					deleteAllData(scanner);
+					break;
+				case 2:
+					updateCultistById(scanner);
+					break;
+				case 3:
+					deleteCultistById(scanner);
+					break;
+				case 4:
+					viewCultistById(scanner);
+					break;
+				default:
+					System.out.println("Invalid choice.");
+			}
+		} else {
+			System.out.println("Incorrect password.");
+		}
+	}
+
+	@Transactional
+	private void deleteAllData(Scanner scanner) {
+		System.out.print("Are you sure you want to delete all data? [Y/N]: ");
+		String confirmation = scanner.nextLine();
+		if ("Y".equalsIgnoreCase(confirmation)) {
+			cultRepository.deleteAll();
+			cultistRepository.deleteAll();
+			cultMembershipRepository.deleteAll();
+			System.out.println("All data deleted.");
+		} else {
+			System.out.println("Operation cancelled.");
+		}
+	}
+	@Transactional
+	private void updateCultistById(Scanner scanner) {
+		System.out.print("Enter cultist ID: ");
+		Long id = scanner.nextLong();
+		scanner.nextLine();
+		System.out.print("Enter new cultist name: ");
+		String newName = scanner.nextLine();
+		cultistRepository.findById(id).ifPresent(cultist -> {
+			cultist.setName(newName);
+			cultistRepository.save(cultist);
+			System.out.println("Cultist updated.");
+		});
+	}
+
+	@Transactional
+	private void deleteCultistById(Scanner scanner) {
+		System.out.print("Enter cultist ID: ");
+		Long id = scanner.nextLong();
+		scanner.nextLine();
+		cultistRepository.findById(id).ifPresent(cultist -> {
+			cultistRepository.delete(cultist);
+			System.out.println("Cultist deleted.");
+		});
+	}
+	@Transactional
+	private void viewCultistById(Scanner scanner) {
+		System.out.print("Enter cultist ID: ");
+		Long id = scanner.nextLong();
+		scanner.nextLine(); // consume newline
+		cultistRepository.findById(id).ifPresentOrElse(cultist -> {
+			System.out.println("ID: " + cultist.getId() + ", Name: " + cultist.getName());
+			if (cultist.getCult() != null) {
+				System.out.println("Cult: " + cultist.getCult().getName());
+			}
+		}, () -> System.out.println("Cultist not found."));
 	}
 }
